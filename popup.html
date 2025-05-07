@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LinguaSwitch</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>LinguaSwitch</h1>
+    
+    <div class="input-container">
+      <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
+    </div>
+    
+    <div class="button-container">
+      <button id="translateBtn">Translate</button>
+    </div>
+    
+    <div class="output-container">
+      <div id="loadingIndicator" class="hidden">
+        <div class="spinner"></div>
+        <p>Translating...</p>
+      </div>
+      <div id="outputText" class="output"></div>
+    </div>
+    
+    <div class="footer">
+      <button id="openOptions">Settings</button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LinguaSwitch Settings</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container options-container">
+    <h1>LinguaSwitch Settings</h1>
+    
+    <div class="setting-group">
+      <h2>OpenAI API Key</h2>
+      <p class="description">Your API key will be stored locally and never shared.</p>
+      <input type="password" id="apiKey" placeholder="Enter your OpenAI API key">
+    </div>
+    
+    <div class="setting-group">
+      <h2>System Prompt</h2>
+      <p class="description">Customize the system prompt sent to GPT-4o.</p>
+      <textarea id="systemPrompt" placeholder="Enter your custom system prompt"></textarea>
+    </div>
+    
+    <div class="button-container">
+      <button id="saveSettings">Save Settings</button>
+    </div>
+    
+    <div id="statusMessage" class="status-message hidden"></div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
