@@ -13,6 +13,10 @@
       <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
     </div>
     
+    <div class="language-indicator">
+      <span id="detectedLanguage">Detected language: </span>
+    </div>
+    
     <div class="button-container">
       <button id="translateBtn">Translate</button>
     </div>
@@ -24,11 +28,11 @@
       </div>
       <div class="output-wrapper">
         <div id="outputText" class="output"></div>
-        <button id="copyBtn" class="copy-btn" title="Copy to clipboard">Copy</button>
       </div>
     </div>
     
     <div class="footer">
+      <button id="copyBtn" class="copy-btn" title="Copy to clipboard">Copy</button>
       <button id="openOptions">Settings</button>
     </div>
   </div>
