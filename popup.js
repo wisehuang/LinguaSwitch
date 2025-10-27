@@ -5,13 +5,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const loadingIndicator = document.getElementById('loadingIndicator');
   const openOptionsBtn = document.getElementById('openOptions');
   const copyBtn = document.getElementById('copyBtn');
-  
-  // Check if API key is set
-  chrome.storage.local.get(['apiKey'], function(result) {
+  const targetLanguageSelect = document.getElementById('targetLanguage');
+
+  // Check if API key is set and load target language preference
+  chrome.storage.local.get(['apiKey', 'targetLanguage'], function(result) {
     if (!result.apiKey) {
       outputText.textContent = 'Please set your OpenAI API key in the settings first.';
       translateBtn.disabled = true;
     }
+
+    // Load saved target language (default to Traditional Chinese)
+    if (result.targetLanguage) {
+      targetLanguageSelect.value = result.targetLanguage;
+    }
+  });
+
+  // Save target language preference when changed
+  targetLanguageSelect.addEventListener('change', function() {
+    chrome.storage.local.set({ targetLanguage: targetLanguageSelect.value });
   });
   
   // Open options page
@@ -67,24 +78,32 @@ document.addEventListener('DOMContentLoaded', function() {
         outputText.textContent = 'Please set your OpenAI API key in the settings first.';
         return;
       }
-      
-      // Determine if input is Chinese
+
+      // Get selected target language
+      const targetLanguageCode = targetLanguageSelect.value;
+      const languageMap = {
+        'zh-TW': 'Traditional Chinese',
+        'ja': 'Japanese',
+        'ko': 'Korean',
+        'en': 'English',
+        'zh-CN': 'Simplified Chinese'
+      };
+      const targetLanguage = languageMap[targetLanguageCode];
+
+      // Default system prompt if not set
+      const systemPrompt = result.systemPrompt ||
+        `You are a helpful translation assistant. Translate the user's input text accurately to the requested target language.`;
+
+      // Detect language for display purposes
       containsChinese(text)
-        .then(isChinese => {
-          // Set target language based on input
-          const targetLanguage = isChinese ? 'English' : 'Traditional Chinese (zh-TW)';
-          
-          // Default system prompt if not set
-          const systemPrompt = result.systemPrompt || 
-            `You are a helpful translation assistant. Translate the user's input text. If the input contains Chinese characters, translate it to English. If the input is in any other language (like English, Japanese, Korean, etc.), translate it to Traditional Chinese (zh-TW). For Japanese text, ensure you translate it to Traditional Chinese characters, not Simplified Chinese.`;
-          
-          // Call OpenAI API
+        .then(() => {
+          // Call OpenAI API with selected target language
           return callOpenAI(text, result.apiKey, systemPrompt, targetLanguage);
         })
         .then(translation => {
           loadingIndicator.classList.add('hidden');
           outputText.textContent = translation;
-          
+
           // Show copy button after translation is complete
           copyBtn.classList.add('visible');
         })
