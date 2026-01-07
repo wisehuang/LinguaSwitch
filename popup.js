@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function() {
           'Authorization': `Bearer ${result.apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-5.2',
           messages: [
             {
               role: 'system',
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5.2',
         messages: [
           {
             role: 'system',
