@@ -6,12 +6,27 @@ document.addEventListener('DOMContentLoaded', function() {
   const openOptionsBtn = document.getElementById('openOptions');
   const copyBtn = document.getElementById('copyBtn');
   const targetLanguageSelect = document.getElementById('targetLanguage');
+  const detectedLanguage = document.getElementById('detectedLanguage');
+  const clearBtn = document.getElementById('clearBtn');
 
   // Check if API key is set and load target language preference
-  chrome.storage.local.get(['apiKey', 'targetLanguage'], function(result) {
+  chrome.storage.local.get(['apiKey', 'targetLanguage', 'popupInput', 'popupOutput'], function(result) {
+    if (Object.prototype.hasOwnProperty.call(result, 'popupInput')) {
+      inputText.value = result.popupInput || '';
+    }
+
+    if (Object.prototype.hasOwnProperty.call(result, 'popupOutput')) {
+      outputText.textContent = result.popupOutput || '';
+      if (result.popupOutput && result.popupOutput.trim() !== '') {
+        copyBtn.classList.add('visible');
+      }
+    }
+
     if (!result.apiKey) {
-      outputText.textContent = 'Please set your OpenAI API key in the settings first.';
       translateBtn.disabled = true;
+      if (!outputText.textContent.trim()) {
+        outputText.textContent = 'Please set your OpenAI API key in the settings first.';
+      }
     }
 
     // Load saved target language (default to Traditional Chinese)
@@ -23,6 +38,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save target language preference when changed
   targetLanguageSelect.addEventListener('change', function() {
     chrome.storage.local.set({ targetLanguage: targetLanguageSelect.value });
+  });
+
+  inputText.addEventListener('input', function() {
+    chrome.storage.local.set({ popupInput: inputText.value });
   });
   
   // Open options page
@@ -52,6 +71,15 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Failed to copy text: ', err);
       });
   });
+
+  clearBtn.addEventListener('click', function() {
+    inputText.value = '';
+    outputText.textContent = '';
+    detectedLanguage.textContent = 'Detected language: ';
+    copyBtn.classList.remove('visible');
+    loadingIndicator.classList.add('hidden');
+    chrome.storage.local.remove(['popupInput', 'popupOutput']);
+  });
   
   // Translate text
   translateBtn.addEventListener('click', function() {
@@ -59,14 +87,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!text) {
       outputText.textContent = 'Please enter some text to translate.';
-      document.getElementById('detectedLanguage').textContent = 'Detected language: ';
+      detectedLanguage.textContent = 'Detected language: ';
       return;
     }
     
     // Show loading indicator
     loadingIndicator.classList.remove('hidden');
     outputText.textContent = '';
-    document.getElementById('detectedLanguage').textContent = 'Detecting language...';
+    detectedLanguage.textContent = 'Detecting language...';
     
     // Hide copy button when starting a new translation
     copyBtn.classList.remove('visible');
@@ -103,6 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(translation => {
           loadingIndicator.classList.add('hidden');
           outputText.textContent = translation;
+          chrome.storage.local.set({ popupOutput: translation });
 
           // Show copy button after translation is complete
           copyBtn.classList.add('visible');
@@ -153,12 +182,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       const data = await response.json();
-      const detectedLanguage = data.choices[0].message.content.trim();
+      const detectedLanguageText = data.choices[0].message.content.trim();
       
       // Update the UI with detected language
-      document.getElementById('detectedLanguage').textContent = `Detected language: ${detectedLanguage}`;
+      detectedLanguage.textContent = `Detected language: ${detectedLanguageText}`;
       
-      return detectedLanguage.toLowerCase().includes('chinese');
+      return detectedLanguageText.toLowerCase().includes('chinese');
     } catch (error) {
       console.error('Error detecting language:', error);
       throw error;

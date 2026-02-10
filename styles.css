@@ -166,7 +166,17 @@ button:hover {
   border: 1px solid #ddd;
 }
 
+#clearBtn {
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
 #openOptions:hover {
+  background-color: #e5e5e5;
+}
+
+#clearBtn:hover {
   background-color: #e5e5e5;
 }
 
