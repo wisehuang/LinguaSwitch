@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
+  const defaultModel = 'gpt-5.6-luna';
   const inputText = document.getElementById('inputText');
   const translateBtn = document.getElementById('translateBtn');
   const outputText = document.getElementById('outputText');
@@ -100,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     copyBtn.classList.remove('visible');
     
     // Get API key and system prompt from storage
-    chrome.storage.local.get(['apiKey', 'systemPrompt'], function(result) {
+    chrome.storage.local.get(['apiKey', 'model', 'systemPrompt'], function(result) {
       if (!result.apiKey) {
         loadingIndicator.classList.add('hidden');
         outputText.textContent = 'Please set your OpenAI API key in the settings first.';
@@ -121,12 +122,13 @@ document.addEventListener('DOMContentLoaded', function() {
       // Default system prompt if not set
       const systemPrompt = result.systemPrompt ||
         `You are a helpful translation assistant. Translate the user's input text accurately to the requested target language.`;
+      const model = result.model || defaultModel;
 
       // Detect language for display purposes
-      containsChinese(text)
+      containsChinese(text, result.apiKey, model)
         .then(() => {
           // Call OpenAI API with selected target language
-          return callOpenAI(text, result.apiKey, systemPrompt, targetLanguage);
+          return callOpenAI(text, result.apiKey, systemPrompt, targetLanguage, model);
         })
         .then(translation => {
           loadingIndicator.classList.add('hidden');
@@ -144,14 +146,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   // Function to detect if text contains Chinese characters using OpenAI API
-  async function containsChinese(text) {
+  async function containsChinese(text, apiKey, model) {
     try {
-      // Get API key from storage
-      const result = await new Promise(resolve => {
-        chrome.storage.local.get(['apiKey'], resolve);
-      });
-      
-      if (!result.apiKey) {
+      if (!apiKey) {
         throw new Error('API key not found');
       }
       
@@ -159,10 +156,10 @@ document.addEventListener('DOMContentLoaded', function() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${result.apiKey}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-5.2',
+          model: model,
           messages: [
             {
               role: 'system',
@@ -173,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
               content: `What is the primary language of this text? Respond with only the language name in English: "${text.substring(0, 100)}"`
             }
           ],
-          temperature: 0.1
+          reasoning_effort: 'none'
         })
       });
       
@@ -195,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   // Function to call OpenAI API
-  async function callOpenAI(text, apiKey, systemPrompt, targetLanguage) {
+  async function callOpenAI(text, apiKey, systemPrompt, targetLanguage, model) {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -203,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-5.2',
+        model: model,
         messages: [
           {
             role: 'system',
@@ -214,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
             content: `Translate the following text to ${targetLanguage}: "${text}"`
           }
         ],
-        temperature: 0.3
+        reasoning_effort: 'none'
       })
     });
     

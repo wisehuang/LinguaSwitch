@@ -1,14 +1,18 @@
 document.addEventListener('DOMContentLoaded', function() {
+  const defaultModel = 'gpt-5.6-luna';
   const apiKeyInput = document.getElementById('apiKey');
+  const modelInput = document.getElementById('model');
   const systemPromptInput = document.getElementById('systemPrompt');
   const saveButton = document.getElementById('saveSettings');
   const statusMessage = document.getElementById('statusMessage');
   
   // Load saved settings
-  chrome.storage.local.get(['apiKey', 'systemPrompt'], function(result) {
+  chrome.storage.local.get(['apiKey', 'model', 'systemPrompt'], function(result) {
     if (result.apiKey) {
       apiKeyInput.value = result.apiKey;
     }
+
+    modelInput.value = result.model || defaultModel;
     
     if (result.systemPrompt) {
       systemPromptInput.value = result.systemPrompt;
@@ -21,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save settings
   saveButton.addEventListener('click', function() {
     const apiKey = apiKeyInput.value.trim();
+    const model = modelInput.value.trim() || defaultModel;
     const systemPrompt = systemPromptInput.value.trim();
     
     if (!apiKey) {
@@ -30,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     chrome.storage.local.set({
       apiKey: apiKey,
+      model: model,
       systemPrompt: systemPrompt
     }, function() {
       showStatus('Settings saved successfully!', 'success');

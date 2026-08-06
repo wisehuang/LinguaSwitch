@@ -14,10 +14,17 @@
       <p class="description">Your API key will be stored locally and never shared.</p>
       <input type="password" id="apiKey" placeholder="Enter your OpenAI API key">
     </div>
+
+    <div class="setting-group">
+      <h2>OpenAI Model</h2>
+      <p class="description">Choose the model used for language detection and translation.</p>
+      <label class="visually-hidden" for="model">OpenAI model</label>
+      <input type="text" id="model" placeholder="gpt-5.6-luna" autocomplete="off" spellcheck="false">
+    </div>
     
     <div class="setting-group">
       <h2>System Prompt</h2>
-      <p class="description">Customize the system prompt sent to GPT-4o.</p>
+      <p class="description">Customize the system prompt sent to the selected OpenAI model.</p>
       <textarea id="systemPrompt" placeholder="Enter your custom system prompt"></textarea>
     </div>
     

@@ -190,7 +190,8 @@ button:hover {
   margin-bottom: 10px;
 }
 
-input[type="password"] {
+input[type="password"],
+input[type="text"] {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
@@ -198,6 +199,18 @@ input[type="password"] {
   font-family: inherit;
   font-size: 14px;
   box-sizing: border-box;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .status-message {
