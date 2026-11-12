@@ -1,40 +1,49 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>LinguaSwitch Settings</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="container options-container">
-    <h1>LinguaSwitch Settings</h1>
-    
-    <div class="setting-group">
-      <h2>OpenAI API Key</h2>
-      <p class="description">Your API key will be stored locally and never shared.</p>
-      <input type="password" id="apiKey" placeholder="Enter your OpenAI API key">
+<body class="options-page">
+  <main class="container options-container">
+    <header class="app-header">
+      <div class="brand-mark" aria-hidden="true">文<span>A</span></div>
+      <div class="brand-copy">
+        <p class="brand-name">LinguaSwitch</p>
+        <p>A little closer, in every language.</p>
+      </div>
+    </header>
+    <div class="settings-heading">
+      <span class="eyebrow">MAKE IT YOURS</span>
+      <h1>Settings</h1>
+      <p>Set up your translation space.</p>
     </div>
 
-    <div class="setting-group">
-      <h2>OpenAI Model</h2>
-      <p class="description">Choose the model used for language detection and translation.</p>
-      <label class="visually-hidden" for="model">OpenAI model</label>
-      <input type="text" id="model" placeholder="gpt-5.6-luna" autocomplete="off" spellcheck="false">
+    <div class="settings-card">
+      <div class="setting-group">
+        <h2><label for="apiKey">OpenAI API Key</label></h2>
+        <p id="apiKeyHelp" class="description">Stored locally in your browser. Used to connect to OpenAI.</p>
+        <input type="password" id="apiKey" placeholder="Enter your OpenAI API key" aria-describedby="apiKeyHelp" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="setting-group">
+        <h2><label for="model">OpenAI Model</label></h2>
+        <p id="modelHelp" class="description">Choose the model used for language detection and translation.</p>
+        <input type="text" id="model" placeholder="gpt-5.6-luna" aria-describedby="modelHelp" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="setting-group">
+        <h2><label for="systemPrompt">System Prompt</label></h2>
+        <p id="promptHelp" class="description">Customize the system prompt sent to the selected OpenAI model.</p>
+        <textarea id="systemPrompt" placeholder="Enter your custom system prompt" aria-describedby="promptHelp"></textarea>
+      </div>
     </div>
-    
-    <div class="setting-group">
-      <h2>System Prompt</h2>
-      <p class="description">Customize the system prompt sent to the selected OpenAI model.</p>
-      <textarea id="systemPrompt" placeholder="Enter your custom system prompt"></textarea>
+    <div class="settings-actions button-container">
+      <p>Make every word feel like you.</p>
+      <button id="saveSettings" class="primary-button">Save Settings</button>
     </div>
-    
-    <div class="button-container">
-      <button id="saveSettings">Save Settings</button>
-    </div>
-    
-    <div id="statusMessage" class="status-message hidden"></div>
-  </div>
-  
+    <div id="statusMessage" class="status-message hidden" role="status"></div>
+  </main>
   <script src="options.js"></script>
 </body>
 </html>
