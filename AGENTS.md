@@ -51,9 +51,9 @@ Unless specifically requested, do not generate a new Markdown document for each 
 
 **Default Model:** `defaultModel` is defined in both `popup.js:2` and `options.js:2`. Update both when changing the default.
 
-**Default System Prompt:** Defined in two places with *different* text:
-- `popup.js:134-135`: fallback used when no prompt is saved (generic "translate to the requested target language")
-- `options.js:21`: prefilled in the settings textarea (older Chinese↔English auto-direction wording)
+**Default System Prompt:** Same text defined in two places; keep them in sync:
+- `popup.js:134-135`: fallback used when no prompt is saved
+- `options.js:21`: prefilled in the settings textarea
 
 **Storage Schema:**
 ```javascript

@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
       systemPromptInput.value = result.systemPrompt;
     } else {
       // Default system prompt
-      systemPromptInput.value = 'You are a helpful translation assistant. Translate the user\'s input text. If the input contains Chinese characters, translate it to English. If the input is in any other language (like English, Korean, Japanese, etc.), translate it to Traditional Chinese (zh-TW).';
+      systemPromptInput.value = 'You are a helpful translation assistant. Translate the user\'s input text accurately to the requested target language.';
     }
   });
   
