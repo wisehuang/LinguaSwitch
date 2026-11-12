@@ -76,6 +76,7 @@ There is no standalone testing environment. All development requires Chrome brow
 
 ```
 popup.html + popup.js     # Main translation interface
+background.js             # Context menu: right-click selected text -> open popup and translate
 options.html + options.js # Settings page (API key + system prompt)
 styles.css                # Shared styles for both pages
 manifest.json             # Extension configuration (Manifest V3)

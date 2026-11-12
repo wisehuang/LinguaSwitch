@@ -34,6 +34,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (result.targetLanguage) {
       targetLanguageSelect.value = result.targetLanguage;
     }
+
+    // Text sent from the right-click context menu (see background.js)
+    chrome.action.setBadgeText({ text: '' });
+    chrome.storage.session.get('pendingSelection', function(session) {
+      const pending = session.pendingSelection;
+      if (!pending) return;
+      chrome.storage.session.remove('pendingSelection');
+      inputText.value = pending;
+      chrome.storage.local.set({ popupInput: pending });
+      translateBtn.click(); // no-op if button disabled (no API key)
+    });
   });
 
   // Save target language preference when changed
