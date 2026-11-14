@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "102",
   "name": "LinguaSwitch",
-  "version": "1.4",
-  "description": "Translate between Chinese and other languages using OpenAI's ChatGPT.",
+  "version": "1.5",
+  "description": "Translate text into your chosen language with OpenAI models, from the popup or the right-click menu.",
   "permissions": [
     "storage",
-    "activeTab",
     "contextMenus"
   ],
   "background": {

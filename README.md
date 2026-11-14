@@ -6,10 +6,12 @@ A Chrome extension (Manifest V3) that translates text with OpenAI models. Type o
 
 - **Right-click translation**: Select text on any web page, right-click, and choose **LinguaSwitch: Translate "…"**. The popup opens with the selected text and starts translating right away.
 - **Target language selector**: Translate into Traditional Chinese (default), Simplified Chinese, English, Japanese, or Korean. The extension remembers your last choice.
-- **Language detection**: Shows the detected language of the input.
+- **Language detection**: Shows the detected language of the input. Detection runs in the browser and makes no API call.
 - **Configurable model**: Use any OpenAI chat model. The default is `gpt-5.6-luna`.
 - **Customizable system prompt**: Change the system prompt to control how the model translates.
 - **Persistent popup state**: The last input and translation are kept when you close and reopen the popup. **Clear** resets them.
+- **Background translation**: A translation keeps running if the popup closes. Reopen the popup to see the result.
+- **Keyboard shortcut**: Press Ctrl+Enter (Cmd+Enter on macOS) to translate.
 - **Copy to clipboard**: Copy the translation with one click.
 
 ## Installation
@@ -37,7 +39,7 @@ No build step is required.
 1. Click the LinguaSwitch icon in the toolbar.
 2. Enter or paste text in the input field.
 3. Choose a target language.
-4. Click **Translate**.
+4. Click **Translate** or press Ctrl+Enter.
 5. Click **Copy** to copy the result, or **Clear** to start over.
 
 ### From the right-click menu
@@ -53,9 +55,10 @@ The right-click flow opens the popup with `chrome.action.openPopup()`, which nee
 ```
 LinguaSwitch/
 ├── manifest.json   # Extension configuration (Manifest V3)
-├── background.js   # Service worker: right-click menu, hands the selection to the popup
+├── background.js   # Service worker: OpenAI calls, right-click menu
+├── defaults.js     # Shared default model and system prompt
 ├── popup.html      # Translation popup
-├── popup.js        # Popup logic: language detection, translation, state
+├── popup.js        # Popup logic: language detection, state, rendering
 ├── options.html    # Settings page
 ├── options.js      # Settings logic: API key, model, system prompt
 ├── styles.css      # Shared styles for the popup and settings page
@@ -65,10 +68,10 @@ LinguaSwitch/
 ## Technical Details
 
 - Calls the OpenAI Chat Completions API (`/v1/chat/completions`) directly from the extension. There is no backend.
-- Makes two API calls per translation: one to detect the input language (for display) and one to translate into the selected target language.
-- Stores settings, the target language, and the last popup input/output in `chrome.storage.local`.
+- Makes one API call per translation, from the service worker. The input language is detected on-device with `chrome.i18n.detectLanguage` (display only).
+- Stores settings, the target language, and the last popup input, output, error, and detected language in `chrome.storage.local`.
 - Holds right-click selections briefly in `chrome.storage.session` until the popup reads them.
-- Permissions: `storage`, `activeTab`, `contextMenus`.
+- Permissions: `storage`, `contextMenus`. Requires Chrome 102 or later (127 or later for the right-click flow to open the popup by itself).
 
 ## Privacy
 

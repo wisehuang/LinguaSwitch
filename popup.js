@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const defaultModel = 'gpt-5.6-luna';
+  const NO_API_KEY_MESSAGE = 'Please set your OpenAI API key in the settings first.';
+  const DETECTED_PREFIX = 'Detected language: ';
+  const POPUP_STATE_KEYS = ['popupInput', 'popupOutput', 'popupError', 'popupDetectedLanguage'];
+
   const inputText = document.getElementById('inputText');
   const translateBtn = document.getElementById('translateBtn');
   const outputText = document.getElementById('outputText');
@@ -10,30 +13,57 @@ document.addEventListener('DOMContentLoaded', function() {
   const detectedLanguage = document.getElementById('detectedLanguage');
   const clearBtn = document.getElementById('clearBtn');
 
-  // Check if API key is set and load target language preference
-  chrome.storage.local.get(['apiKey', 'targetLanguage', 'popupInput', 'popupOutput'], function(result) {
-    if (Object.prototype.hasOwnProperty.call(result, 'popupInput')) {
-      inputText.value = result.popupInput || '';
+  const languageNames = new Intl.DisplayNames(['en'], { type: 'language' });
+  let hasApiKey = false;
+
+  function setLoading(isLoading) {
+    loadingIndicator.classList.toggle('hidden', !isLoading);
+    translateBtn.disabled = isLoading || !hasApiKey;
+  }
+
+  // Ends the loading state and shows text; only real translations are copyable.
+  function showResult(text, isTranslation) {
+    setLoading(false);
+    outputText.textContent = text;
+    copyBtn.classList.toggle('visible', isTranslation && text.trim() !== '');
+  }
+
+  function setDetectedLanguage(name) {
+    detectedLanguage.textContent = DETECTED_PREFIX + name;
+  }
+
+  // Load saved state; the translation itself runs in background.js
+  chrome.storage.local.get(['apiKey', 'targetLanguage', ...POPUP_STATE_KEYS], function(result) {
+    hasApiKey = Boolean(result.apiKey);
+    inputText.value = result.popupInput || '';
+
+    if (result.popupError) {
+      showResult(`Error: ${result.popupError}`, false);
+    } else if (result.popupOutput) {
+      showResult(result.popupOutput, true);
+    } else if (!hasApiKey) {
+      showResult(NO_API_KEY_MESSAGE, false);
+    } else {
+      setLoading(false);
     }
 
-    if (Object.prototype.hasOwnProperty.call(result, 'popupOutput')) {
-      outputText.textContent = result.popupOutput || '';
-      if (result.popupOutput && result.popupOutput.trim() !== '') {
-        copyBtn.classList.add('visible');
-      }
-    }
-
-    if (!result.apiKey) {
-      translateBtn.disabled = true;
-      if (!outputText.textContent.trim()) {
-        outputText.textContent = 'Please set your OpenAI API key in the settings first.';
-      }
+    if (result.popupDetectedLanguage) {
+      setDetectedLanguage(result.popupDetectedLanguage);
     }
 
     // Load saved target language (default to Traditional Chinese)
     if (result.targetLanguage) {
       targetLanguageSelect.value = result.targetLanguage;
     }
+
+    // A translation started before the popup was closed may still be running
+    chrome.runtime.sendMessage({ type: 'getStatus' })
+      .then(status => {
+        if (status && status.translating) {
+          setLoading(true);
+        }
+      })
+      .catch(() => {});
 
     // Text sent from the right-click context menu (see background.js)
     chrome.action.setBadgeText({ text: '' });
@@ -43,8 +73,19 @@ document.addEventListener('DOMContentLoaded', function() {
       chrome.storage.session.remove('pendingSelection');
       inputText.value = pending;
       chrome.storage.local.set({ popupInput: pending });
-      translateBtn.click(); // no-op if button disabled (no API key)
+      startTranslation(); // replaces any translation still in flight
     });
+  });
+
+  // Results arrive through storage, written by background.js
+  chrome.storage.onChanged.addListener(function(changes, area) {
+    if (area !== 'local') return;
+    if (changes.popupOutput && changes.popupOutput.newValue !== undefined) {
+      showResult(changes.popupOutput.newValue, true);
+    }
+    if (changes.popupError && changes.popupError.newValue !== undefined) {
+      showResult(`Error: ${changes.popupError.newValue}`, false);
+    }
   });
 
   // Save target language preference when changed
@@ -55,26 +96,34 @@ document.addEventListener('DOMContentLoaded', function() {
   inputText.addEventListener('input', function() {
     chrome.storage.local.set({ popupInput: inputText.value });
   });
-  
+
+  // Ctrl+Enter / Cmd+Enter translates
+  inputText.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      translateBtn.click(); // no-op while disabled
+    }
+  });
+
   // Open options page
   openOptionsBtn.addEventListener('click', function() {
     chrome.runtime.openOptionsPage();
   });
-  
+
   // Copy text to clipboard
   copyBtn.addEventListener('click', function() {
     const textToCopy = outputText.textContent;
-    
+
     if (!textToCopy || textToCopy.trim() === '') {
       return;
     }
-    
+
     navigator.clipboard.writeText(textToCopy)
       .then(() => {
         // Visual feedback that text was copied
         const originalText = copyBtn.textContent;
         copyBtn.textContent = 'Copied!';
-        
+
         setTimeout(() => {
           copyBtn.textContent = originalText;
         }, 2000);
@@ -85,153 +134,56 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   clearBtn.addEventListener('click', function() {
+    chrome.runtime.sendMessage({ type: 'cancel' }).catch(() => {});
+    chrome.storage.local.remove(POPUP_STATE_KEYS);
     inputText.value = '';
-    outputText.textContent = '';
-    detectedLanguage.textContent = 'Detected language: ';
-    copyBtn.classList.remove('visible');
-    loadingIndicator.classList.add('hidden');
-    chrome.storage.local.remove(['popupInput', 'popupOutput']);
+    setDetectedLanguage('');
+    showResult('', false);
   });
-  
-  // Translate text
-  translateBtn.addEventListener('click', function() {
+
+  translateBtn.addEventListener('click', startTranslation);
+
+  function startTranslation() {
     const text = inputText.value.trim();
-    
+
     if (!text) {
-      outputText.textContent = 'Please enter some text to translate.';
-      detectedLanguage.textContent = 'Detected language: ';
+      showResult('Please enter some text to translate.', false);
+      setDetectedLanguage('');
       return;
     }
-    
-    // Show loading indicator
-    loadingIndicator.classList.remove('hidden');
+
     outputText.textContent = '';
-    detectedLanguage.textContent = 'Detecting language...';
-    
-    // Hide copy button when starting a new translation
     copyBtn.classList.remove('visible');
-    
-    // Get API key and system prompt from storage
-    chrome.storage.local.get(['apiKey', 'model', 'systemPrompt'], function(result) {
-      if (!result.apiKey) {
-        loadingIndicator.classList.add('hidden');
-        outputText.textContent = 'Please set your OpenAI API key in the settings first.';
-        return;
-      }
+    setLoading(true);
+    detectLanguage(text);
 
-      // Get selected target language
-      const targetLanguageCode = targetLanguageSelect.value;
-      const languageMap = {
-        'zh-TW': 'Traditional Chinese',
-        'ja': 'Japanese',
-        'ko': 'Korean',
-        'en': 'English',
-        'zh-CN': 'Simplified Chinese'
-      };
-      const targetLanguage = languageMap[targetLanguageCode];
-
-      // Default system prompt if not set
-      const systemPrompt = result.systemPrompt ||
-        `You are a helpful translation assistant. Translate the user's input text accurately to the requested target language.`;
-      const model = result.model || defaultModel;
-
-      // Detect language for display purposes
-      containsChinese(text, result.apiKey, model)
-        .then(() => {
-          // Call OpenAI API with selected target language
-          return callOpenAI(text, result.apiKey, systemPrompt, targetLanguage, model);
-        })
-        .then(translation => {
-          loadingIndicator.classList.add('hidden');
-          outputText.textContent = translation;
-          chrome.storage.local.set({ popupOutput: translation });
-
-          // Show copy button after translation is complete
-          copyBtn.classList.add('visible');
-        })
-        .catch(error => {
-          loadingIndicator.classList.add('hidden');
-          outputText.textContent = `Error: ${error.message}`;
-        });
+    // The result comes back through chrome.storage.onChanged; a rejection here
+    // means the service worker could not be reached at all.
+    chrome.runtime.sendMessage({
+      type: 'translate',
+      text: text,
+      targetLanguage: targetLanguageSelect.value
+    }).catch(error => {
+      showResult(`Error: ${error.message}`, false);
     });
-  });
-  
-  // Function to detect if text contains Chinese characters using OpenAI API
-  async function containsChinese(text, apiKey, model) {
-    try {
-      if (!apiKey) {
-        throw new Error('API key not found');
-      }
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a language detection tool. Respond with the language name in English (e.g., "Chinese", "Japanese", "English", etc.).'
-            },
-            {
-              role: 'user',
-              content: `What is the primary language of this text? Respond with only the language name in English: "${text.substring(0, 100)}"`
-            }
-          ],
-          reasoning_effort: 'none'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-      
-      const data = await response.json();
-      const detectedLanguageText = data.choices[0].message.content.trim();
-      
-      // Update the UI with detected language
-      detectedLanguage.textContent = `Detected language: ${detectedLanguageText}`;
-      
-      return detectedLanguageText.toLowerCase().includes('chinese');
-    } catch (error) {
-      console.error('Error detecting language:', error);
-      throw error;
-    }
   }
-  
-  // Function to call OpenAI API
-  async function callOpenAI(text, apiKey, systemPrompt, targetLanguage, model) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: `Translate the following text to ${targetLanguage}: "${text}"`
-          }
-        ],
-        reasoning_effort: 'none'
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to translate');
+
+  // Display-only, on-device detection (no API call); never blocks translation
+  async function detectLanguage(text) {
+    let name = 'Unknown';
+    try {
+      const result = await chrome.i18n.detectLanguage(text);
+      const top = result.languages.reduce(
+        (best, candidate) => (!best || candidate.percentage > best.percentage ? candidate : best),
+        null
+      );
+      if (top && top.language !== 'und') {
+        name = languageNames.of(top.language) || top.language;
+      }
+    } catch (error) {
+      console.warn('Language detection failed:', error);
     }
-    
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
+    setDetectedLanguage(name);
+    chrome.storage.local.set({ popupDetectedLanguage: name });
   }
 });

@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const defaultModel = 'gpt-5.6-luna';
   const apiKeyInput = document.getElementById('apiKey');
   const modelInput = document.getElementById('model');
   const systemPromptInput = document.getElementById('systemPrompt');
   const saveButton = document.getElementById('saveSettings');
   const statusMessage = document.getElementById('statusMessage');
+
+  modelInput.placeholder = LINGUASWITCH_DEFAULTS.model;
   
   // Load saved settings
   chrome.storage.local.get(['apiKey', 'model', 'systemPrompt'], function(result) {
@@ -12,20 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
       apiKeyInput.value = result.apiKey;
     }
 
-    modelInput.value = result.model || defaultModel;
-    
-    if (result.systemPrompt) {
-      systemPromptInput.value = result.systemPrompt;
-    } else {
-      // Default system prompt
-      systemPromptInput.value = 'You are a helpful translation assistant. Translate the user\'s input text accurately to the requested target language.';
-    }
+    modelInput.value = result.model || LINGUASWITCH_DEFAULTS.model;
+    systemPromptInput.value = result.systemPrompt || LINGUASWITCH_DEFAULTS.systemPrompt;
   });
   
   // Save settings
   saveButton.addEventListener('click', function() {
     const apiKey = apiKeyInput.value.trim();
-    const model = modelInput.value.trim() || defaultModel;
+    const model = modelInput.value.trim() || LINGUASWITCH_DEFAULTS.model;
     const systemPrompt = systemPromptInput.value.trim();
     
     if (!apiKey) {
